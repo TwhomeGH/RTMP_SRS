@@ -215,6 +215,14 @@
             if (token) {
             autoLogin(token, user => {
                 showToast('你已登入!');
+
+
+                let loginPage=document.getElementById("loginPage")
+                let loginText=loginPage.innerText.split("/")
+
+                loginPage.innerText = loginText.pop()
+                console.log('loginPage',loginPage,loginText)
+
                 renderUserInfo();
                 loadPlatforms()
                 loadConfigs();
@@ -304,14 +312,18 @@
 
 </head>
 
-<body class="min-h-screen bg-gray-100">
+<body class="min-h-screen bg-gray-700/30">
 
+    
     <!-- 右上選單 -->
-    <nav class="w-full bg-white shadow-md fixed top-0 left-0 z-50">
+    <nav class="w-full bg-blue-900/40 backdrop-blur-lg text-gray-100 shadow-xl fixed top-0 left-0 z-50 border border-blue-400/30">
         <div id='navlinks' class="max-w-5xl mx-auto px-6 py-3 flex justify-end space-x-4">
-            <a href="login.html" class="text-gray-700 hover:text-blue-600 px-3 py-1 font-medium">登入/取得你的Key</a>
+
+            <a href="login.html" id="loginPage" class="hover:text-blue-500 px-3 py-1 font-medium">登入/取得你的Key</a>
+
         </div>
     </nav>
+
 
     <div class="pt-24 px-6 space-y-6 max-w-5xl mx-auto">
 

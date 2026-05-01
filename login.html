@@ -8,25 +8,28 @@
     <!-- <script src="https://cdn.tailwindcss.com"></script> -->
     <link href="/WebJS/dstTest.css" rel="stylesheet">
     <link rel="icon" type="image/jpg" href="/favicon.jpg">
+
 </head>
 
-<body class="min-h-screen bg-gray-100">
+<body class="min-h-screen bg-gray-700/30">
 
     <!-- 右上選單 -->
-    <nav class="w-full bg-white shadow-md fixed top-0 left-0 z-50">
+    <nav class="w-full bg-blue-900/40 backdrop-blur-lg text-gray-100 shadow-xl fixed top-0 left-0 z-50 border border-blue-400/30">
+
         <div id='navlinks' class="max-w-5xl mx-auto px-6 py-3 flex justify-end space-x-4">
-            <a href="forward.html" class="text-gray-700 hover:text-blue-600 px-3 py-1 font-medium">配置多平台流設置</a>
-            <a href="pay.html" class="text-gray-700 hover:text-blue-600 px-3 py-1 font-medium">購買取得你的Key</a>
+            <a href="forward.html" class="font-medium px-3 py-1 hover:text-blue-500">配置多平台流設置</a>
+            <a href="pay.html" class="font-medium px-3 py-1 hover:text-blue-500">購買取得你的Key</a>
+
             <!-- <a href="register.html" class="text-gray-700 hover:text-blue-600 font-medium">註冊</a>
-      <a href="index.html" class="text-gray-700 hover:text-blue-600 font-medium">首頁</a> -->
+            <a href="index.html" class="text-gray-700 hover:text-blue-600 font-medium">首頁</a> -->
         </div>
     </nav>
-    <div class="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+    <div class="min-h-screen flex items-center justify-center bg-gray-400 p-6">
 
         <div id="toast"
             class="fixed top-20 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg hidden max-w-xs wrap-break-word">
         </div>
-        <div class="w-full max-w-5xl mx-auto bg-white rounded-lg shadow-lg p-8">
+        <div class="w-full max-w-5xl mx-auto bg-white/90 rounded-lg shadow-lg p-8">
             <!-- 登入區塊 -->
             <div id="loginDiv" class="space-y-4">
                 <h1 class="text-2xl font-bold text-center text-gray-800">登入 / 註冊</h1>
@@ -52,13 +55,13 @@
             <!-- 登入後 keys 顯示區 -->
             <div id="keysDiv" class="hidden mt-6">
                 <h3 class="text-xl font-semibold text-gray-800 mb-3">你的 Stream Keys</h3>
-                <table class="min-w-full bg-white rounded-lg shadow-md overflow-hidden">
-                    <thead class="bg-gray-100">
+                <table class="min-w-full text-gray-500 rounded-lg shadow-md overflow-hidden">
+                    <thead class="bg-gray-800">
                         <tr>
-                            <th class="px-4 py-2 text-left text-gray-700">Key</th>
-                            <th class="px-4 py-2 text-left text-gray-700">ID</th>
-                            <th class="px-4 py-2 text-left text-gray-700">過期時間</th>
-                            <th class="px-4 py-2 text-left text-gray-700">操作</th>
+                            <th class="px-4 py-2 text-left text-gray-100">Key</th>
+                            <th class="px-4 py-2 text-left text-gray-100">ID</th>
+                            <th class="px-4 py-2 text-left text-gray-100">過期時間</th>
+                            <th class="px-4 py-2 text-left text-gray-100">操作</th>
                         </tr>
                     </thead>
                     <tbody id="keysList" class="divide-y divide-gray-200">
