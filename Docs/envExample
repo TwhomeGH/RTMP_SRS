@@ -1,0 +1,44 @@
+
+# 你的POSTSGRES 數據庫配置
+db_user=你的數據庫用戶名
+db_password=你的數據庫密碼
+
+host=localhost
+# host 數據庫如果架在本機 直接用 本地即可
+
+database=postgres
+
+# database 這裡就是你要用的資料庫名稱 如果用預設保持不變
+
+pgport=5333
+
+# pgport 數據庫端口
+
+PAYPAL_CLIENT_ID=正式環境使用的CLIENT_ID
+PAYPAL_CLIENT_SECRET=正式環境使用的CLIENT_SECRET
+PAYPAL_WEBHOOK_ID=正式環境使用的WEBHOOK_ID
+
+# PayPal API配置 請自行建立之後填入
+
+
+PAYPAL_CLIENT_ID_SANDBOX=模擬環境使用的CLIENT_ID
+PAYPAL_CLIENT_SECRET_SANDBOX=模擬環境使用的CLIENT_SECRET
+PAYPAL_WEBHOOK_ID_SANDBOX=模擬環境使用的WEBHOOK_ID
+
+
+# PayPal 使用的貨幣單位
+PAYPAL_CURRENCY = USD
+
+USE_SANDBOX=true
+
+# 驗證校驗保護
+JWT_SECRET=設置一組安全的校驗密碼
+
+# 你可以透過 GETAES.js 取得一組安全的Key來保護
+
+# JWT_SECRET　讓伺服器能確認這個 token 是服務器自己簽出去的，不是假的
+
+AES_KEY=服務器安全解密用
+
+# AES_KEY 用來保護帳號密碼資訊的
+# 一樣這你可以透過 GETAES.js取得一組安全的Key
