@@ -1,0 +1,36 @@
+{
+  "name": "work",
+  "version": "1.0.0",
+  "description": "",
+  "main": "StreamCheck.js",
+  "scripts": {
+    "build": "postcss ./WebJS/srcTest.css -o ./WebJS/dstTest.css",
+    "watch-css": "postcss ./WebJS/srcTest.css -o ./WebJS/dstTest.css --watch",
+    "backend": "node StreamCheck.js",
+    "frontend": "node pay.js",
+    "srs": "node SRS/API.js",
+    "dev": "chcp 65001 >NUL && cross-env NODE_OPTIONS=--enable-source-maps concurrently -n backend,frontend,srs,css -c \"blue,green,red,yellow\" \"npm run backend\" \"npm run frontend\" \"npm run srs\" \"npm run watch-css\"",
+    "prod": "chcp 65001 >NUL && concurrently -n backend,frontend,srs,css -c \"blue,green,red,yellow\" \"npm run backend\" \"npm run frontend\" \"npm run srs\" \"npm run build\"",
+    "auto": "nodemon --watch . --ext js,json --exec \"npm run dev\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.17",
+    "@tailwindcss/postcss": "^4.1.17",
+    "autoprefixer": "^10.4.22",
+    "cross-env": "^10.0.0",
+    "postcss": "^8.5.6",
+    "postcss-discard-empty": "^7.0.1",
+    "postcss-media-minmax": "^5.0.0",
+    "postcss-nested": "^7.0.2",
+    "postcss-preset-env": "^10.4.0",
+    "tailwindcss": "^4.1.17"
+  },
+  "dependencies": {
+    "certbot": "^5.0.3",
+    "postcss-cli": "^11.0.1"
+  }
+}
