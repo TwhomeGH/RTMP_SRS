@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登入與 Stream Keys</title>
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+    <link href="/WebJS/dstTest.css" rel="stylesheet">
+    <link rel="icon" type="image/jpg" href="/favicon.jpg">
+</head>
+
+<body class="min-h-screen bg-gray-100">
+
+    <!-- 右上選單 -->
+    <nav class="w-full bg-white shadow-md fixed top-0 left-0 z-50">
+        <div id='navlinks' class="max-w-5xl mx-auto px-6 py-3 flex justify-end space-x-4">
+            <a href="forward.html" class="text-gray-700 hover:text-blue-600 px-3 py-1 font-medium">配置多平台流設置</a>
+            <a href="pay.html" class="text-gray-700 hover:text-blue-600 px-3 py-1 font-medium">購買取得你的Key</a>
+            <!-- <a href="register.html" class="text-gray-700 hover:text-blue-600 font-medium">註冊</a>
+      <a href="index.html" class="text-gray-700 hover:text-blue-600 font-medium">首頁</a> -->
+        </div>
+    </nav>
+    <div class="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+
+        <div id="toast"
+            class="fixed top-20 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg hidden max-w-xs wrap-break-word">
+        </div>
+        <div class="w-full max-w-5xl mx-auto bg-white rounded-lg shadow-lg p-8">
+            <!-- 登入區塊 -->
+            <div id="loginDiv" class="space-y-4">
+                <h1 class="text-2xl font-bold text-center text-gray-800">登入 / 註冊</h1>
+
+                <input id="username" placeholder="帳號"
+                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                <input id="password" type="password" placeholder="密碼"
+                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                <div class="flex space-x-2">
+                    <button id="loginBtn"
+                        class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                        登入
+                    </button>
+                    <button id="regBtn"
+                        class="flex-1 bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 transition">
+                        註冊
+                    </button>
+                </div>
+            </div>
+
+            <!-- 登入後 keys 顯示區 -->
+            <div id="keysDiv" class="hidden mt-6">
+                <h3 class="text-xl font-semibold text-gray-800 mb-3">你的 Stream Keys</h3>
+                <table class="min-w-full bg-white rounded-lg shadow-md overflow-hidden">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-gray-700">Key</th>
+                            <th class="px-4 py-2 text-left text-gray-700">ID</th>
+                            <th class="px-4 py-2 text-left text-gray-700">過期時間</th>
+                            <th class="px-4 py-2 text-left text-gray-700">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="keysList" class="divide-y divide-gray-200">
+                        <!-- 動態生成的 li 改成 tr -->
+                    </tbody>
+                </table>
+
+                <!-- 刷新按鈕 -->
+                <button id="refreshKeysBtn"
+                    class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full shadow-lg">
+                    🔄 刷新
+                </button>
+
+            </div>
+
+            <!-- 登入提示 -->
+            <p id="haslog" class="mt-4 text-center text-green-700 font-medium"></p>
+        </div>
+    </div>
+
+
+    <script type="module">
+        // WebJS/api.js
+        import { getToken,setToken , userInfo,autoLogin, showToast, renderUserInfo } from './WebJS/user.js';
+        import { API_BASE_URL } from './WebJS/config.js';
+
+        let token = getToken();
+        console.log('Loaded token:', token);
+
+        async function loadKeys() {
+            console.log('token:', token);
+            const res = await fetch(`${API_BASE_URL}/my-stream-keys`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const keys = await res.json();
+            console.log('Keys from server:', keys);
+            const list = document.getElementById('keysList');
+            list.innerHTML = '';
+            keys.forEach(k => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                  <td class="px-4 py-2 text-gray-800 flex items-center space-x-2">
+                    <span>${k.streamKey}</span>
+                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded copy-btn"
+                            data-key="${k.streamKey}">
+                    複製
+                    </button>
+                </td>
+                <td class="px-4 py-2 text-gray-800">${k.key_id}</td>
+                <td class="px-4 py-2 text-gray-800">${new Date(k.expiredAt).toLocaleString()}</td>
+                    <td class="px-4 py-2">
+        <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded"
+                onclick="regenerateKey('${k.key_id}')">重新生成</button>
+      </td>
+            `;
+                list.appendChild(tr);
+            });
+
+            function copyToClipboard(text) {
+                if (navigator.clipboard) {
+                    // 現代方法
+                    navigator.clipboard.writeText(text)
+                        .then(() => showToast(`已複製 Key: ${text}`, 'success'))
+                        .catch(err => showToast('複製失敗！', 'error'));
+                } else {
+                    // 傳統方法
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.position = 'fixed';  // 避免跳動
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    try {
+                        document.execCommand('copy');
+                        showToast(`已複製 Key: ${text}`, 'success');
+                    } catch (err) {
+                        showToast('複製失敗！', 'error');
+                    }
+                    document.body.removeChild(textarea);
+                }
+            }
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const key = btn.dataset.key;
+                    copyToClipboard(key)
+                });
+            });
+
+            document.getElementById('keysDiv').classList.remove('hidden');
+        }
+
+
+        async function regenerateKey(keyId) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/regenerate-key`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ key_id: keyId })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    const expiredDate = new Date(data.expiredAt);
+                    showToast(
+                        `🎉 已生成新 Key: ${data.streamKey} <br>` +
+                        `過期時間: ${expiredDate.toLocaleString()}`
+                    );
+
+                    loadKeys(); // 重新載入列表
+                } else {
+                    showToast(data.error || '重新生成失敗', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('重新生成失敗，請稍後再試', error);
+            }
+        }
+
+
+        document.getElementById('refreshKeysBtn').addEventListener('click', () => {
+            if (token) {
+                loadKeys(); // 重新載入 Stream Keys
+            } else {
+                showToast('請先登入', 'error');
+            }
+        });
+
+        document.getElementById("regBtn").addEventListener('click', async () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(data.message);
+                } else {
+                    showToast(data.error, 'error');
+                }
+            } catch (err) {
+                console.error('註冊失敗', err);
+                showToast('註冊失敗，請稍後再試', 'error');
+            }
+        });
+
+        document.getElementById("loginBtn").addEventListener('click', async () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const res = await fetch(`${API_BASE_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await res.json();
+            if (data.token) {
+                setToken(data.token);
+                console.log('Login successful, token:', data.token);
+                console.log('Storing token in localStorage',getToken());
+                token = data.token;
+                
+                //localStorage.setItem('token', token);
+                const loginDiv = document.getElementById('loginDiv');
+                if (loginDiv) loginDiv.style.display = 'none';
+                
+                loadKeys();
+                renderUserInfo()
+            } else {
+                showToast(data.error, 'error');
+            }
+        });
+
+        if (token) {
+            autoLogin(token, (user) => {
+                const loginDiv = document.getElementById('loginDiv');
+                const haslog = document.getElementById('haslog');
+
+                if (loginDiv) loginDiv.style.display = 'none';
+                if (haslog) haslog.innerText = "✅ 你已登入";
+                loadKeys(); // 載入 StreamKey
+                renderUserInfo()
+            });
+        }
+
+
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>多平台推流設置</title>
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+    <link href="/WebJS/dstTest.css" rel="stylesheet">
+    <link rel="icon" type="image/jpg" href="/favicon.jpg">
+    
+    <script type="module">
+        import { getToken, setToken, userInfo, autoLogin, showToast, renderUserInfo } from './WebJS/user.js';
+        import { API_BASE_URL } from './WebJS/config.js';
+
+
+        async function loadPlatforms() {
+            const res = await fetch(`${API_BASE_URL}/api/platforms`);
+            const platforms = await res.json();
+
+            const select = document.getElementById("rtmp_url_select");
+            select.innerHTML = '<option value="">請選擇平台</option>';
+            console.log(platforms, 'debug')
+            platforms.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.rtmp_url;
+                opt.textContent = p.platform_name;
+                select.appendChild(opt);
+            });
+
+            // 加上自訂選項
+            const customOpt = document.createElement("option");
+            customOpt.value = "custom";
+            customOpt.textContent = "自訂";
+            select.appendChild(customOpt);
+        }
+
+
+
+        const configListEl = document.getElementById('configList');
+        const forwardModalEl = document.getElementById('forwardModal');
+        const forwardFormEl = document.getElementById('forwardForm');
+        const btnAddConfig = document.getElementById('btnAddConfig');
+        const btnCancelModal = document.getElementById('btnCancelModal');
+        const toastEl = document.getElementById('toast');
+
+        function initForwardForm(cfg) {
+            // cfg = 從資料庫撈到的資料，例如 { platform_name, rtmp_url, stream_key }
+
+            document.getElementById("platform_name").value = cfg.platform_name || "";
+            document.getElementById("stream_key").value = cfg.key || "";
+
+            const select = document.getElementById("rtmp_url_select");
+            const customInput = document.getElementById("rtmp_url_custom");
+
+            // 判斷 rtmp_url 是否在選單裡
+            const option = Array.from(select.options).find(opt => opt.value === cfg.url);
+
+            if (option) {
+                // 如果在選單裡 → 選中對應平台
+                select.value = cfg.url;
+                customInput.classList.add("hidden");
+                customInput.value = "";
+            } else {
+                // 不在選單裡 → 選中 "自訂"，並填入自訂框
+                select.value = "custom";
+                customInput.classList.remove("hidden");
+                customInput.value = cfg.url;
+            }
+        }
+
+        async function openModal(data) {
+            if (data) {
+                initForwardForm(data)
+
+                // document.getElementById('rtmp_url').value = data.url;
+                // document.getElementById('stream_key').value = data.key;
+                document.getElementById('platform_name').value = data.platform;
+                forwardFormEl.dataset.editId = data.id;
+
+
+            } else {
+                forwardFormEl.reset();
+                delete forwardFormEl.dataset.editId;
+            }
+            forwardModalEl.style.display = "flex";  // 直接顯示
+        }
+
+        function closeModal() {
+            forwardModalEl.style.display = "none";  // 直接顯示
+        }
+
+        function toggleStreamKey(id, key) {
+            const el = document.getElementById(`streamKey-${id}`);
+            if (el.dataset.shown === 'true') {
+                el.textContent = '••••••••••';
+                el.dataset.shown = 'false';
+                event.target.textContent = '顯示';
+            } else {
+                el.textContent = key;
+                el.dataset.shown = 'true';
+                event.target.textContent = '隱藏';
+            }
+        }
+
+        function toggleCustomUrl() {
+            const select = document.getElementById("rtmp_url_select");
+            const customInput = document.getElementById("rtmp_url_custom");
+
+            if (select.value === "custom") {
+                customInput.classList.remove("hidden");
+                customInput.required = true;
+            } else {
+                customInput.classList.add("hidden");
+                customInput.required = false;
+            }
+
+
+        }
+
+        window.toggleCustomUrl = toggleCustomUrl; // 讓 HTML 可以調用
+        window.toggleStreamKey = toggleStreamKey; // 讓 HTML 可以調用
+
+        function renderConfigList(configs) {
+            configListEl.innerHTML = "";
+            console.log('con', configs)
+            configs.forEach(cfg => {
+                const select = document.getElementById("rtmp_url_select");
+                // 找出對應平台名稱
+                console.log('select', select)
+                let platformDisplayName = Array.from(select.options).find(p => {
+                    console.log(p.value, cfg.rtmp_url)
+                    return p.value === cfg.rtmp_url;
+                })?.text || '自訂'
+
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-lg shadow flex flex-col justify-between space-y-3";
+                card.dataset.id = cfg.id;
+                card.dataset.url = cfg.rtmp_url;
+                card.dataset.key = cfg.stream_key;
+                card.dataset.platform = cfg.platform_name;
+                console.log('select', select)
+                card.innerHTML = `
+          <div class="break-words">
+            <h3 class="font-bold text-lg">${cfg.platform_name}</h3>
+            <p class="text-gray-600 text-sm">RTMP服務器平台:${platformDisplayName}</p>
+             <p class="text-gray-600 text-sm">
+                STREAM_KEY: 
+                <span id="streamKey-${cfg.id}" style="user-select: all;">••••••••••</span>
+                <button onclick="toggleStreamKey('${cfg.id}','${cfg.stream_key}')" class="ml-2 text-blue-500 underline text-xs">
+                顯示
+                </button>
+            </p>
+
+            </div>
+          <div class="flex justify-end space-x-2">
+            <button data-action="edit" class="bg-yellow-500 text-white px-3 py-1 rounded">編輯</button>
+            <button data-action="delete" class="bg-red-500 text-white px-3 py-1 rounded">刪除</button>
+          </div>
+        `;
+                configListEl.appendChild(card);
+            });
+        }
+
+        
+
+        let token = getToken();
+
+        async function loadConfigs() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/get/forward`, {
+                    method: "POST",
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error("無法取得資料");
+                const configs = await res.json();
+                renderConfigList(configs);
+
+            } catch (err) {
+                console.error(err);
+                showToast("❌ 無法載入推流配置");
+            }
+        }
+
+        async function deleteConfig(id) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/remove/forward/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        list_id: id
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast("❌ 已刪除配置");
+                    await loadConfigs();
+                } else {
+                    showToast("⚠️ 刪除失敗: " + (data.message || ""));
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("⚠️ 刪除錯誤");
+            }
+        }
+
+    
+        document.addEventListener("DOMContentLoaded",async (e)=>{
+
+            if (token) {
+            autoLogin(token, user => {
+                showToast('你已登入!');
+                renderUserInfo();
+                loadPlatforms()
+                loadConfigs();
+
+            });
+
+
+            configListEl.addEventListener('click', e => {
+                const action = e.target.dataset.action;
+                if (!action) return;
+                const card = e.target.closest('div[data-id]');
+                const id = card.dataset.id;
+
+                if (action === 'edit') {
+                    openModal({
+                        id,
+                        url: card.dataset.url,
+                        key: card.dataset.key,
+                        platform: card.dataset.platform
+                    });
+                } else if (action === 'delete') {
+                    deleteConfig(id);
+                }
+            });
+
+            btnAddConfig.addEventListener('click', () => openModal());
+            btnCancelModal.addEventListener('click', closeModal);
+            // forwardModalEl.addEventListener('click', e => {
+            //     if (e.target === forwardModalEl) closeModal();
+            // });
+
+
+            forwardFormEl.addEventListener('submit', async e => {
+                e.preventDefault();
+                console.log('dataset', forwardFormEl.dataset)
+                let rtmp_url = document.getElementById("rtmp_url_select").value.trim();
+                if (rtmp_url === "custom") {
+                    rtmp_url = document.getElementById("rtmp_url_custom").value.trim();
+                }
+
+                const stream_key = document.getElementById("stream_key").value.trim();
+                const platform_name = document.getElementById("platform_name").value.trim();
+                const editID = forwardFormEl.dataset.editId || null;
+
+
+                if (!rtmp_url || !stream_key || !platform_name) {
+                    showToast("⚠️ 請填寫完整資訊");
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`${API_BASE_URL}/set/forward`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            rtmp_url, stream_key,
+                            platform_name, user_id: userInfo.id,
+                            list_id: editID
+                        })
+                    });
+
+                    const result = await res.json();
+                    console.log(result)
+                    if (res.ok) {
+                        closeModal();           // ✅ 先關閉 Modal
+                        showToast("✅ 推流配置已保存");
+                        await loadConfigs();    // ✅ 再刷新列表
+                    } else {
+                        showToast("⚠️ 保存失敗: " + (result.message || ""));
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast("❌ 提交失敗");
+                }
+            });
+
+        }
+
+        })
+        
+
+    </script>
+
+
+</head>
+
+<body class="min-h-screen bg-gray-100">
+
+    <!-- 右上選單 -->
+    <nav class="w-full bg-white shadow-md fixed top-0 left-0 z-50">
+        <div id='navlinks' class="max-w-5xl mx-auto px-6 py-3 flex justify-end space-x-4">
+            <a href="login.html" class="text-gray-700 hover:text-blue-600 px-3 py-1 font-medium">登入/取得你的Key</a>
+        </div>
+    </nav>
+
+    <div class="pt-24 px-6 space-y-6 max-w-5xl mx-auto">
+
+        <!-- Toast -->
+        <div id="toast"
+            class="fixed top-20 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg hidden max-w-xs wrap-break-word">
+        </div>
+
+        <!-- 新增配置按鈕 -->
+        <div class="text-right">
+            <button id="btnAddConfig" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                ➕ 新增推流配置
+            </button>
+        </div>
+
+        <!-- 表單 Modal -->
+        <div id="forwardModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
+                <h2 class="text-xl font-bold mb-4">新增/編輯推流配置</h2>
+                <form id="forwardForm" class="space-y-4">
+
+                    <div>
+                        <label class="block text-gray-700">平台名稱</label>
+                        <input type="text" id="platform_name" class="w-full border px-3 py-2 rounded"
+                            placeholder="Twitch / YouTube / TikTok">
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700">RTMP URL</label>
+                        <!-- 下拉選單 -->
+                        <select title="請選擇平台" id="rtmp_url_select" class="w-full border px-3 py-2 rounded"
+                            onchange="toggleCustomUrl()">
+                        </select>
+
+                        <!-- 自訂輸入框（預設隱藏） -->
+                        <input type="text" id="rtmp_url_custom" class="w-full border px-3 py-2 rounded mt-2 hidden"
+                            placeholder="rtmp://example.com/live">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Stream Key</label>
+                        <input type="text" id="stream_key" class="w-full border px-3 py-2 rounded"
+                            placeholder="xxxx-xxxx-xxxx">
+                    </div>
+
+                    <div class="flex justify-end space-x-2">
+                        <button type="button" id="btnCancelModal"
+                            class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">取消</button>
+                        <button type="submit"
+                            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 配置列表 -->
+        <div id="configList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+    </div>
+
+</body>
+
+</html>

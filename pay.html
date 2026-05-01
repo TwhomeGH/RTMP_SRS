@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多平台推流購買頁</title>
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+    <link href="/WebJS/dstTest.css" rel="stylesheet">
+    <link rel="icon" type="image/jpg" href="/favicon.jpg">
+    <!-- PayPal JS SDK -->
+    <script
+        src="https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=${PAYPAL_CURRENCY}"></script>
+
+
+</head>
+
+<body class="min-h-screen bg-gray-100">
+
+    <!-- 右上選單 -->
+    <nav class="w-full bg-white shadow-md fixed top-0 left-0 z-50">
+        <div id='navlinks' class="max-w-5xl mx-auto px-6 py-3 flex justify-end space-x-4">
+            <a href="forward.html" class="text-gray-700 hover:text-blue-600 px-3 py-1 font-medium">配置多平台流設置</a>
+            <a href="login.html" class="text-gray-700 hover:text-blue-600 px-3 py-1 font-medium">登入/取得你的Key</a>
+            <!-- <a href="register.html" class="text-gray-700 hover:text-blue-600 font-medium">註冊</a>
+            <a href="index.html" class="text-gray-700 hover:text-blue-600 font-medium">首頁</a> -->
+
+        </div>
+    </nav>
+
+    <!-- 主內容 -->
+    <!-- 全新方案展示區塊 -->
+    <div class="relative isolate bg-gray-900 px-6 py-24 sm:py-32 lg:px-8 w-full">
+        <div id="toast"
+            class="fixed top-20 right-5 bg-green-500 text-white px-4 py-2 rounded shadow-lg hidden max-w-xs wrap-break-word">
+        </div>
+
+
+
+        <!-- 漸層背景特效 -->
+        <div aria-hidden="true" class="absolute inset-x-0 -top-3 -z-10 transform-gpu overflow-hidden px-36 blur-3xl">
+            <div style="clip-path: polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)"
+                class="mx-auto aspect-1155/678 w-288.75 bg-linear-to-tr from-[#ff80b5] to-[#9089fc] opacity-20">
+            </div>
+        </div>
+        <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <h1 class="text-3xl font-bold tracking-tight text-white">你的方案</h1>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4">
+                <!-- JS 會動態生成卡片 -->
+            </div>
+            <div class="inline-flex">
+                <button class="reloadPlan rounded-l-sm border border-gray-200 px-3 py-2 font-medium text-gray-100 
+    transition-colors   
+    active:bg-gray-300  
+    active:outline-none 
+    disabled:pointer-events-auto 
+    disabled:opacity-50 
+    dark:active:bg-gray-300">
+                    刷新
+                </button>
+                <!-- 方角版本 -->
+
+
+            </div>
+        </div>
+
+        <script>
+
+        </script>
+
+        <!-- 標題與說明 -->
+        <div class="mx-auto max-w-4xl text-center">
+            <h2 class="text-base font-semibold text-indigo-400">Pricing</h2>
+            <p class="mt-2 text-5xl font-semibold tracking-tight text-white sm:text-6xl">選擇適合你的方案</p>
+        </div>
+        <p class="mx-auto mt-6 max-w-2xl text-center text-lg text-gray-400 sm:text-xl">
+            我們提供多種推流中轉方案<br>讓你一次推到 Twitch、YouTube、TikTok，提升覆蓋率！
+        </p>
+
+        <!-- 方案卡片 -->
+        <div class="mx-auto mt-16 grid max-w-lg grid-cols-1 gap-6 sm:mt-20 lg:max-w-4xl lg:grid-cols-3">
+            <!-- 嚐鮮方案 -->
+            <div data-key="Basic" class="plan-card rounded-3xl bg-white/5 p-8 ring-1 ring-white/10">
+                <h3 class="text-base font-semibold text-indigo-400">嚐鮮</h3>
+                <p class="mt-4 flex items-baseline gap-x-2">
+                    <span class="text-4xl font-semibold tracking-tight text-white">$5</span>
+                    <span class="text-base text-gray-400">/5天</span>
+                </p>
+                <p class="mt-6 text-sm text-gray-300">短期體驗，適合想先測試功能的用戶</p>
+                <ul role="list" class="mt-6 space-y-2 text-sm text-gray-300">
+                    <li>✓ 可同時推送到多平台（如 Twitch、YouTube、TikTok 等）</li>
+                </ul>
+                <p class="paystatus mt-6 text-sm text-blue-200"></p>
+                <div id="paypal-button-container-basic" class="mt-6"></div>
+
+                <!-- 登錄提示區塊 -->
+                <div class="loginStatus mt-6 text-sm text-gray-300">
+                    <!-- 這裡會被 innerHTML 替換 -->
+                </div>
+
+            </div>
+
+            <!-- 基本方案 -->
+            <div data-key="Pro" class="plan-card relative rounded-3xl bg-gray-900/5 p-8 ring-2 ring-indigo-500">
+                <h3 class="text-base font-semibold text-indigo-400">基本</h3>
+                <p class="mt-4 flex items-baseline gap-x-2">
+                    <span class="text-4xl font-semibold tracking-tight text-white">$10</span>
+                    <span class="text-base text-gray-400">/14天</span>
+                </p>
+                <p class="mt-6 text-sm text-gray-300">最受歡迎，功能完整，性價比高</p>
+                <ul role="list" class="mt-6 space-y-2 text-sm text-gray-300">
+                    <li>✓ 可同時推送到多平台（如 Twitch、YouTube、TikTok 等）</li>
+                </ul>
+                <p class="paystatus mt-6 text-sm text-blue-200"></p>
+                <div id="paypal-button-container-pro" class="mt-6"></div>
+
+                <!-- 登錄提示區塊 -->
+                <div class="loginStatus mt-6 text-sm text-gray-300">
+                    <!-- 這裡會被 innerHTML 替換 -->
+                </div>
+
+            </div>
+
+            <!-- 專業方案 -->
+            <div data-key="Plus" class="plan-card rounded-3xl bg-white/5 p-8 ring-1 ring-white/10">
+                <h3 class="text-base font-semibold text-indigo-400">專業</h3>
+                <p class="mt-4 flex items-baseline gap-x-2">
+                    <span class="text-4xl font-semibold tracking-tight text-white">$20</span>
+                    <span class="text-base text-gray-400">/30天</span>
+                </p>
+                <p class="mt-6 text-sm text-gray-300">適合長期直播主，穩定高效</p>
+                <ul role="list" class="mt-6 space-y-2 text-sm text-gray-300">
+                    <li>✓ 可同時推送到多平台（如 Twitch、YouTube、TikTok 等）</li>
+                </ul>
+                <p class="paystatus mt-6 text-sm text-blue-200"></p>
+                <div id="paypal-button-container-plus" class="mt-6"></div>
+
+                <!-- 登錄提示區塊 -->
+                <div class="loginStatus mt-6 text-sm text-gray-300">
+                    <!-- 這裡會被 innerHTML 替換 -->
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const cards = document.querySelectorAll(".plan-card");
+
+        cards.forEach(card => {
+            card.addEventListener("click", () => {
+                // 移除其他卡片的選中樣式
+                cards.forEach(c => {
+                    c.classList.remove("bg-gray-900/5", "ring-2", "ring-indiog-500");
+                    c.classList.add("bg-white/5", "ring-1", "ring-white/10",)
+                })
+                // 當前卡片加上 selected
+                card.classList.remove("bg-white/5", "ring-1", "ring-white/10",)
+                card.classList.add("bg-gray-900/5", "ring-2", "ring-indiog-500");
+
+                const selectedKey = card.dataset.key;
+                console.log("選中方案:", selectedKey);
+
+                // 這裡可以調用你的 PayPal 按鈕或更新後端
+            });
+        });
+    </script>
+
+
+
+    <script type="module">
+        import { getToken, setToken, userInfo, autoLogin, showToast, renderUserInfo } from './WebJS/user.js';
+
+        import { API_BASE_URL } from './WebJS/config.js';
+
+        let token = getToken();
+
+        function keyNotice(text) {
+            const keyNotice = document.getElementsByClassName('paystatus');
+
+
+            Array.from(keyNotice).forEach(e => {
+                e.innerText = text
+            })
+
+        }
+
+        function PlanType(id) {
+            let planss = [
+                "嚐鮮", "基本", "專業"
+            ]
+            return planss[id]
+        }
+        function Planlist(plans) {
+
+
+            const container = document.querySelector('div.grid');
+
+            container.innerHTML = ''
+            plans.forEach((p) => {
+                const card = document.createElement('div');
+
+                card.className = `
+    bg-gray-500/5 ring-1 ring-white/10 rounded-2xl shadow-md p-4
+    hover:bg-gray-900/5 transition-colors
+  `;
+
+                let EXP = new Date(p.expire_at).toLocaleString()
+                card.innerHTML = `
+    <p class="text-lg md:text-xl text-blue-400">${PlanType(p.plan_id)}</p>
+    <p class="text-sm text-white font-medium">ID: ${p.id}</p>
+    <p class="text-sm text-gray-400">Expire: ${EXP}</p>
+    <p class="text-sm font-semibold ${p.active ? 'text-green-400' : 'text-red-400'}">
+      ${p.active ? 'Active' : 'Inactive'}
+    </p>
+  `;
+
+                container.appendChild(card);
+                showToast("Plan列表刷新")
+            });
+
+        }
+
+        async function init() {
+            if (!token) {
+                showLoginPrompt();
+                return;
+            }
+
+            function renderUserInfo(user) {
+                let userN = document.getElementById('usernameDisplay')
+                if (userN) userN.innerText = user.username;
+
+                let nav = document.getElementById('navlinks');
+                let logbtn = document.createElement('button');
+                logbtn.innerText = '登出'
+                logbtn.className = "bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+
+                // 綁定登出事件
+                logbtn.addEventListener('click', () => {
+                    localStorage.removeItem('token');
+                    location.reload();
+                });
+
+                nav.appendChild(logbtn)
+                showToast("你已成功登入")
+            }
+
+            // 1. 取使用者資訊
+            const user = await fetchUserInfo();
+            if (!user) {
+                showLoginPrompt();
+                return;
+            }
+
+            renderUserInfo(user)
+
+            let UserPlan = await checkPlan()
+            console.log(UserPlan)
+            let REPlan = document.getElementsByClassName("reloadPlan")
+            if (REPlan) {
+                Array.from(REPlan).forEach((e) => {
+                    e.addEventListener('click', async (r) => {
+                        let UserPlan = await checkPlan()
+                        let UserKey = await checkKeys()
+                        Planlist(UserPlan.keys)
+                        if (UserKey.keys.length > 0) {
+                            initPaypalButtons(userIDD, true, stream_key, UserPlan.keys)
+                        }
+                        else {
+                            initPaypalButtons(userIDD, true, null, UserPlan.keys)
+                        }
+
+                        showToast('已為你刷新方案清單')
+                    })
+                })
+            }
+
+
+
+
+            Planlist(UserPlan.keys)
+
+            const paypalContainer = document.getElementById('paypal-button-container');
+
+
+            // 2. 檢查 stream keys
+            let userIDD = user.id
+            const hasValidKey = await checkKeys();
+            console.log(hasValidKey)
+            if (hasValidKey.keys.length > 0) {
+                const now = new Date();
+                const stream_key = hasValidKey.keys[0].streamKey;
+                const expireDate = new Date(hasValidKey.keys[0].expiredAt);
+                console.log('expired', expireDate, stream_key)
+                // 判斷是否快到期，例如 3 天內
+                const diffDays = (expireDate - now) / (1000 * 60 * 60 * 24);
+
+                initPaypalButtons(userIDD, true, stream_key, UserPlan.keys)
+                console.log("DebugPlan", UserPlan.keys)
+                if (diffDays > 3) {
+
+                    keyNotice(`你已有有效的 Stream Key\n到期於:${expireDate.toLocaleString()}`)
+
+
+                } else {
+
+                    keyNotice(`你的 Stream Key 已經到期或即將到期，可續簽\n到期於:${expireDate.toLocaleString()}`);
+                }
+
+            } else {
+
+                keyNotice('你還沒有 Stream Key');
+                initPaypalButtons(userIDD, true, null, UserPlan.keys)
+
+                console.log("userID", userIDD)
+
+            }
+        }
+
+        async function fetchUserInfo() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/me`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return null;
+                return await res.json();
+            } catch (err) {
+                console.error(err);
+                return null;
+            }
+        }
+
+        async function checkPlan() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/my-plan`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const keys = await res.json();
+                console.log(keys, 'keyy')
+                return {
+                    'status': keys.some(k => new Date(k.expiredAt) > new Date()),
+                    keys
+                }
+            } catch (err) {
+                console.error(err);
+                return false;
+            }
+        }
+
+        async function checkKeys() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/my-stream-keys`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const keys = await res.json();
+                return {
+                    'status': keys.some(k => new Date(k.expiredAt) > new Date()),
+                    keys
+                }
+            } catch (err) {
+                console.error(err);
+                return false;
+            }
+        }
+
+        /**
+ * 判斷使用者購買新方案後要 UPDATE 或 INSERT
+ * @param {Array} planlist - 已存在的方案清單
+ * @param {number} planID - 新購買的方案 ID
+ * @returns {Object} { action: "UPDATE" | "INSERT", target: {id, plan_id, expire_at} }
+ */
+        function decidePlanAction(planlist, planID) {
+            if (!planlist || planlist.length === 0) {
+                return { action: "INSERT", target: null };
+            }
+
+            // 所有方案中 expire_at 最大的
+            const highestExpirePlan = planlist.reduce((prev, curr) =>
+                new Date(prev.expire_at) > new Date(curr.expire_at) ? prev : curr
+            );
+
+            // <= 當前 planID 的方案裡 expire_at 最大的
+            const matchedPlan = planlist
+                .filter(p => parseInt(p.plan_id) <= planID)
+                .sort((a, b) => new Date(b.expire_at) - new Date(a.expire_at))[0] || null;
+
+
+            if (matchedPlan) {
+                return { action: "UPDATE", target: matchedPlan };
+            } else {
+                return { action: "INSERT", target: highestExpirePlan };
+            }
+        }
+        function renderPaypalButton(elementID, userID, isRenew, streamKey = null, plan = 'basic', planID = null, planlist) {
+            // 找出第一筆對應 plan_id 的資料
+            let existingPlan = null
+            let latestPlan;
+            if (planlist.length > 0) {
+                console.log("Plist", planlist, planID)
+                let PlanAC = decidePlanAction(planlist, planID)
+                console.log("PlAN_AC", PlanAC)
+                if (PlanAC.action == "UPDATE") {
+                    latestPlan = PlanAC.target
+                } else if (PlanAC.action == "INSERT") {
+                    latestPlan = { ...PlanAC.target, id: -1 }
+
+                }
+            }
+
+            console.log('last', latestPlan)
+            const paypalContainer = document.getElementById(elementID);
+            paypalContainer.innerHTML = ''
+            paypal.Buttons({
+                createOrder: async function (data, actions) {
+                    const res = await fetch(`${API_BASE_URL}/create-order`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userID,
+                            isRenew, streamKey, plan,
+                            "planID": latestPlan.id
+                        })
+                    });
+                    const order = await res.json();
+                    console.log('order', order)
+                    return order.id;
+                },
+                onApprove: async function (data, actions) {
+                    const res = await fetch(`${API_BASE_URL}/capture-order`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderID: data.orderID })
+                    });
+                    const captureData = await res.json();
+
+                    console.log('付款完成:', captureData);
+                    if (isRenew) {
+                        showToast('付款成功！StreamKey 已續訂');
+                        keyNotice(`付款完成！\n請稍候，系統會自動更新你的 Stream Key:\n${streamKey}\n生成後可前往「取得你的Key」查看`);
+
+                    } else {
+                        showToast('付款成功！StreamKey 已生成');
+                        keyNotice('付款完成！請稍候，系統會自動生成你的 Stream Key\n生成後可前往「取得你的Key」查看');
+
+                    }
+                    togglePayPalButtons(false)
+
+                    setTimeout(async (r) => {
+
+
+                        let UserPlan = await checkPlan()
+                        let UserKey = await checkKeys()
+                        Planlist(UserPlan.keys)
+
+                        togglePayPalButtons(true)
+                        if (UserKey.keys.length > 0) {
+                            initPaypalButtons(userIDD, true, stream_key, UserPlan.keys)
+
+                        }
+                        else {
+                            initPaypalButtons(userIDD, true, null, UserPlan.keys)
+                        }
+
+
+
+                    }, 30000)
+
+                },
+                onCancel: function (data) {
+                    showToast(`付款已取消`, 'error');
+                },
+                onError: function (err) {
+                    showToast(`付款失敗，請稍後再試 ${err}`);
+                    alert(err)
+                }
+            }).render(`#${elementID}`);
+        }
+
+        function showLoginPrompt() {
+            let logSTATUS = document.getElementsByClassName('loginStatus')
+            
+            Array.from(logSTATUS).forEach(el => {
+            el.innerHTML = `
+                <p class="text-green-400 font-semibold mb-2">你似乎還沒登錄?</p>
+                <a href="login" 
+                    class="inline-block bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700 transition">
+                    去登錄
+                </a>
+            `;
+            });
+            
+
+
+
+        }
+
+        // 初始化所有 PayPal 按鈕
+        function initPaypalButtons(userID, isRenew, key, UserPlan) {
+            renderPaypalButton("paypal-button-container-basic", userID, isRenew, key, "basic", 0, UserPlan);
+            renderPaypalButton("paypal-button-container-pro", userID, isRenew, key, "pro", 1, UserPlan);
+            renderPaypalButton("paypal-button-container-plus", userID, isRenew, key, "plus", 2, UserPlan);
+        }
+
+        // 初始化所有 PayPal 按鈕
+        function togglePayPalButtons(show) {
+            let buttons = [
+                document.getElementById("paypal-button-container-basic"),
+                document.getElementById("paypal-button-container-pro"),
+                document.getElementById("paypal-button-container-plus")
+            ];
+
+            buttons.forEach((btn) => {
+                if (btn) {
+                    btn.style.display = show ? "block" : "none";
+                }
+            });
+        }
+
+
+        // 啟動流程
+        init();
+    </script>
+
+</body>
+
+</html>
