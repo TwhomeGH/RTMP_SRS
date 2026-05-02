@@ -22,59 +22,147 @@ import { pool } from './API/pool.js'
 
 //console.log(process.env)
 
-// 新增
+
+
+
+
+// 切換方案
+// 切換或更新方案
+async function switchPlan(userId, newPlanId, planDay = 30, active = true, id = -1) {
+  try {
+    // 先停用舊方案
+    await pool.query(
+      `UPDATE user_plans SET active = false WHERE user_id = $1 AND active = true`,
+      [userId]
+    );
+
+    // 查出舊方案的到期時間 (如果有的話)
+    const latest = await pool.query(
+      `SELECT MAX(expire_at) as latest_expire
+         FROM user_plans
+         WHERE user_id = $1`,
+      [userId]
+    );
+
+    let baseExpire = new Date(); // 預設從現在開始算
+    if (latest.rows[0].latest_expire) {
+      baseExpire = new Date(latest.rows[0].latest_expire);
+    }
+
+    // 新方案的到期時間
+    const newExpire = new Date(baseExpire.getTime() + (planDay * 24 * 60 * 60 * 1000));
+
+    let result;
+    if (id >= 0) {
+      // 更新指定 id 的方案
+      result = await pool.query(
+        `UPDATE user_plans
+         SET plan_id = $1,
+             expire_at = $2,
+             active = $3
+         WHERE id = $4 AND user_id = $5
+         RETURNING *`,
+        [newPlanId, newExpire, active, id, userId]
+      );
+    } else {
+      // 插入新方案
+      result = await pool.query(
+        `INSERT INTO user_plans (user_id, plan_id, expire_at, active)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [userId, newPlanId, newExpire, active]
+      );
+    }
+
+    if (result.rows.length > 0) {
+      console.log('切換/更新方案成功:', result.rows[0]);
+      return result.rows[0];
+    } else {
+      console.log('沒有更新或插入任何方案');
+      return null;
+    }
+  } catch (err) {
+    console.error('切換方案失敗:', err);
+    throw err;
+  }
+}
+
+
+
+
+
+
+/**
+ * 
+ * @param {*} id 是否已有存在方案的ID
+ * @param {*} userId UID識別
+ * @param {*} plan_id 方案等級
+ * @param {*} expiredAt 過期時間
+ * @param {*} planDay 方案天數
+ * @param {*} active 啟用或關閉
+ * @returns 
+ */
 async function addPlan(id = -1, userId = "R2", plan_id = 0, expiredAt = new Date(Date.now() + 24 * 60 * 60 * 1000), planDay = 5, active = true) {
-  let query, value
-  // 先查出該用戶的最新到期時間
-  const latest = await pool.query(
-    `SELECT MAX("expire_at") as latest_expire
-       FROM user_plans
-       WHERE "user_id" = $1`,
+  // 先停用舊方案
+  await pool.query(
+    `UPDATE user_plans SET active = false WHERE user_id = $1 AND active = true`,
     [userId]
   );
 
-  let baseExpire = expiredAt // 預設從當前輸入時間算
+  
+  
+  console.log("輸入的Plan",id,"UID",userId,"PIanID等級",plan_id,"Exp",expiredAt,active)
+
+
+  // 查出舊方案的到期時間 (如果有的話)
+  const latest = await pool.query(
+    `SELECT MAX(expire_at) as latest_expire
+       FROM user_plans
+       WHERE user_id = $1`,
+    [userId]
+  );
+
+  let baseExpire = expiredAt; // 預設從當前輸入時間算
   if (latest.rows[0].latest_expire) {
     baseExpire = new Date(latest.rows[0].latest_expire);
   }
-  console.log(planDay, baseExpire.toLocaleString())
-  // 假設方案要加 30 天
+
+  // 新方案的到期時間
   let newExpire = new Date(baseExpire.getTime() + (planDay * 24 * 60 * 60 * 1000));
 
+  let query, value;
   if (id >= 0) {
-    console.log('PLANID', id, plan_id, planDay)
     query = `
-    UPDATE user_plans
-    SET "plan_id" = $1,
-        "expire_at"= $2,
-        "active" = $3
-    WHERE "id" = $4
-    RETURNING *
-    `
-
-    value = [plan_id, newExpire, active, id]
-
+      UPDATE user_plans
+      SET plan_id = $1,
+          expire_at = $2,
+          active = $3
+      WHERE id = $4
+      RETURNING *
+    `;
+    value = [plan_id, newExpire, active, id];
   } else {
-
     query = `
-    INSERT INTO user_plans ("user_id","plan_id","expire_at","active")
-    VALUES ($1,$2,$3,$4)
-    RETURNING *
-  `
-    value = [userId, plan_id, newExpire, active]
+      INSERT INTO user_plans (user_id, plan_id, expire_at, active)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
+    `;
+    value = [userId, plan_id, newExpire, active];
   }
 
   const result = await pool.query(query, value);
 
-  if (result.rowCount === 0) {
-    console.log('新增 Plan 成功:', userId, plan_id, active, expiredAt.toLocaleString());
-
+  if (result.rows.length > 0) {
+    console.log('切換/新增方案成功:', result.rows[0]);
+    return result.rows[0];
   } else {
-    let DAYEXP = new Date(result.rows[0].expire_at)
-    console.log('Plan 已存在:', userId, plan_id, active, DAYEXP.toLocaleString());
-
+    console.log('沒有更新或插入任何方案');
+    return null;
   }
+    
 }
+
+
 
 
 // 新增
@@ -136,6 +224,23 @@ app.use(cors({
 app.use(json());
 
 
+
+// 建立 planID 對應 key
+const planMap = {
+  0: "basic",
+  1: "pro",
+  2: "plus"
+};
+
+// 用 planID 查方案
+function getPlanById(planID, type = 0) {
+  const key = planMap[planID];
+  if (!key) return "未知方案";
+  return getPlan(key, type);
+}
+
+
+
 // 方案對應金額
 const plans = {
   basic: {
@@ -161,7 +266,14 @@ const plans = {
   }
 };
 
-// 取顯示用名稱
+
+/**
+ *
+ *
+ * @param {*} key 他方案識別名
+ * @param {number} [type=0] 0取顯示名字 1取天數 2取Plan等級ID
+ * @return {*} 
+ */
 function getPlan(key, type = 0) {
   let result
   switch (type) {
@@ -325,6 +437,8 @@ app.post('/capture-order', async (req, res) => {
     res.status(500).json({ error: 'Failed to capture order', details: err });
   }
 })
+
+
 // 2️⃣ Webhook 處理付款完成
 app.post('/webhook', express.json(), async (req, res) => {
   try {
@@ -366,6 +480,84 @@ app.post('/webhook', express.json(), async (req, res) => {
     res.sendStatus(500);
   }
 });
+
+// 切換方案
+app.post('/switch-plan', express.json(), async (req, res) => {
+
+  const authHeader = req.headers['authorization'];
+  
+  if (!authHeader) return res.status(401).json({ error: '未授權' });
+
+  const token = authHeader.split(' ')[1];
+  let payload;
+  try {
+    payload = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ error: 'Token 無效' });
+  }
+
+  const { userId, updatePlanID ,planID } = req.body;
+  try {
+    const result = await switchPlan(userId, planID, getPlanById(planID, 1),true,updatePlanID);
+
+    console.log("方案",getPlanById(planID,0),"天數",getPlanById(planID, 1),"Plan等級ID",getPlanById(planID, 2),"用戶",userId)
+
+
+    res.json({ status: 'ok', plan: result });
+  } catch (err) {
+    console.error('切換方案失敗:', err);
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
+
+
+// 測試購買入口 (GET with query)
+app.get('/test-purchase', async (req, res) => {
+  try {
+    // 從 query 參數取得測試資料
+    const { userID, plan, planID, isRenew, streamKey } = req.query;
+
+    // 模擬 webhook event
+    const event = {
+      event_type: 'PAYMENT.CAPTURE.COMPLETED',
+      resource: {
+        custom_id: JSON.stringify({
+          planID: planID || 123,
+          userID: userID || 456,
+          plan: plan || 'basic',
+          isRenew: isRenew === 'true',
+          streamKey: streamKey || null
+        })
+      }
+    };
+
+    // --- 處理付款完成事件 ---
+    if (event.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
+      const payerId = JSON.parse(event.resource.custom_id);
+      const productId = 1;
+      let streamKeyValue;
+      const expiredAt = new Date(Date.now() + getPlan(payerId.plan, 1) * 24 * 60 * 60 * 1000);
+
+      if (payerId.isRenew) {
+        streamKeyValue = payerId.streamKey;
+        console.log('續訂 StreamKey:', streamKeyValue, expiredAt.toLocaleString());
+      } else {
+        streamKeyValue = generateStreamKey();
+        console.log('產生 StreamKey:', streamKeyValue, expiredAt.toLocaleString());
+      }
+
+      await addPlan(payerId.planID, payerId.userID, getPlan(payerId.plan, 2), expiredAt, getPlan(payerId.plan, 1), true);
+      await addStreamKey(streamKeyValue, payerId.userID, productId, expiredAt, pool);
+    }
+
+    res.json({ status: 'ok', message: '測試購買流程完成' });
+  } catch (err) {
+    console.error('測試購買失敗:', err);
+    res.sendStatus(500);
+  }
+});
+
 
 
 
@@ -413,6 +605,7 @@ app.get('/', (req, res) => {
 
 import nodeCron from 'node-cron';
 import e from 'express';
+import { type } from 'os';
 // 啟動
 async function main() {
 

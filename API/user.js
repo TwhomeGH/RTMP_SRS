@@ -84,6 +84,7 @@ app.post('/login', async (req, res) => {
 
 app.get('/me', async (req, res) => {
   const authHeader = req.headers['authorization'];
+  
   if (!authHeader) return res.status(401).json({ error: '未授權' });
 
   const token = authHeader.split(' ')[1];

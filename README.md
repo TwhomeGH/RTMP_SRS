@@ -15,7 +15,11 @@
 >
 > 目前僅提供基本登入與部分操作流程
 > 
-> 後續將逐步補齊上述功能。
+> 後續將逐步補齊上述功能
+
+## 最新更新內容
+
+- 我的方案頁能切換當前激活的已購買的方案
 
 
 ## ✨ 功能特色
@@ -306,7 +310,7 @@ CREATE TABLE stream (
 | start_at   | 開始時間   | Timestamp with time zone   | 預設取現在時間 `NOW()`            |
 | expired_at | 到期時間   | Timestamp with time zone   | 記錄方案的到期時間                 |
 | active     | 啟用狀態   | Boolean                    | 是否啟用該方案                     |
-| user_id    | 使用者編號 | Bigint            | 外部索引，引用 `public.users(id)` |
+| user_id    | 使用者編號 | Bigint            | 方案對應用戶用 |
 
 ---
 
@@ -319,8 +323,7 @@ CREATE TABLE user_plans (
     start_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,             -- 開始時間，預設現在時間
     expired_at TIMESTAMPTZ,                                  -- 到期時間
     active BOOLEAN DEFAULT TRUE,                             -- 啟用狀態
-    user_id BIGINT NOT NULL,                           -- 使用者編號
-    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES public.users(id) -- 外部索引
+    user_id BIGINT NOT NULL                           -- 使用者編號
 );
 ```
 

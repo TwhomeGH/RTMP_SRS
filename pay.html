@@ -192,35 +192,78 @@
             ]
             return planss[id]
         }
+
+
         function Planlist(plans) {
+        const container = document.querySelector('div.grid');
+        container.innerHTML = '';
+
+        plans.forEach((p) => {
+            const card = document.createElement('div');
+            card.className = `
+            bg-gray-500/5 ring-1 ring-white/10 rounded-2xl shadow-md p-4
+            hover:bg-gray-900/5 transition-colors
+            `;
+
+            let EXP = new Date(p.expire_at).toLocaleString();
+            card.innerHTML = `
+            <p class="text-lg md:text-xl text-blue-400">${PlanType(p.plan_id)}</p>
+            <p class="text-sm text-white font-medium">ID: ${p.id}</p>
+            <p class="text-sm text-gray-400">Expire: ${EXP}</p>
+            <p class="text-sm font-semibold ${p.active ? 'text-green-400' : 'text-red-400'}">
+                ${p.active ? 'Active' : 'Inactive'}
+            </p>
+            <button class="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+                切換到此方案
+            </button>
+            `;
+
+            // 綁定按鈕事件
+            card.querySelector('button').addEventListener('click', async () => {
+            try {
 
 
-            const container = document.querySelector('div.grid');
+                let USER=await fetchUserInfo()
 
-            container.innerHTML = ''
-            plans.forEach((p) => {
-                const card = document.createElement('div');
+                console.log("取得UID->",USER.id)
 
-                card.className = `
-    bg-gray-500/5 ring-1 ring-white/10 rounded-2xl shadow-md p-4
-    hover:bg-gray-900/5 transition-colors
-  `;
 
-                let EXP = new Date(p.expire_at).toLocaleString()
-                card.innerHTML = `
-    <p class="text-lg md:text-xl text-blue-400">${PlanType(p.plan_id)}</p>
-    <p class="text-sm text-white font-medium">ID: ${p.id}</p>
-    <p class="text-sm text-gray-400">Expire: ${EXP}</p>
-    <p class="text-sm font-semibold ${p.active ? 'text-green-400' : 'text-red-400'}">
-      ${p.active ? 'Active' : 'Inactive'}
-    </p>
-  `;
+                const res = await fetch(`${API_BASE_URL}/switch-plan`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json' ,
+                    'Authorization': 'Bearer ' + token 
+                },
+                body: JSON.stringify({
+                    userId: USER.id,
+                    updatePlanID: p.id,
+                    planID:p.plan_id
+                })
 
-                container.appendChild(card);
-                showToast("Plan列表刷新")
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                showToast(`已切換到方案 ${PlanType(p.plan_id)}`);
+                // 重新刷新列表
+                loadPlans().then((e)=>{
+                    console.log("已進行Plan載入",e)
+
+                });
+                } else {
+                showToast('切換失敗');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('切換失敗');
+            }
             });
 
+            container.appendChild(card);
+        });
+
+        showToast("Plan列表刷新");
         }
+
 
         async function init() {
             if (!token) {
@@ -264,7 +307,16 @@
                     e.addEventListener('click', async (r) => {
                         let UserPlan = await checkPlan()
                         let UserKey = await checkKeys()
-                        Planlist(UserPlan.keys)
+
+
+                         // 排序：active = true 的排在最前面
+                        let sortedPlans = [...UserPlan.keys].sort((a, b) => {
+                            if (a.active === b.active) return 0;
+                            return a.active ? -1 : 1;
+                        });
+
+                        Planlist(sortedPlans)
+
                         if (UserKey.keys.length > 0) {
                             initPaypalButtons(userIDD, true, stream_key, UserPlan.keys)
                         }
@@ -278,9 +330,13 @@
             }
 
 
+            // 排序：active = true 的排在最前面
+            let sortedPlans = [...UserPlan.keys].sort((a, b) => {
+                if (a.active === b.active) return 0;
+                return a.active ? -1 : 1;
+            });
 
-
-            Planlist(UserPlan.keys)
+            Planlist(sortedPlans)
 
             const paypalContainer = document.getElementById('paypal-button-container');
 
@@ -393,6 +449,22 @@
                 return { action: "INSERT", target: highestExpirePlan };
             }
         }
+
+        async function loadPlans(){
+            let UserPlan = await checkPlan()
+
+             // 排序：active = true 的排在最前面
+            let sortedPlans = [...UserPlan.keys].sort((a, b) => {
+                if (a.active === b.active) return 0;
+                return a.active ? -1 : 1;
+            });
+
+            Planlist(sortedPlans)
+            console.log("載入成功",sortedPlans)
+
+        }
+
+
         function renderPaypalButton(elementID, userID, isRenew, streamKey = null, plan = 'basic', planID = null, planlist) {
             // 找出第一筆對應 plan_id 的資料
             let existingPlan = null
