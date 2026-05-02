@@ -228,6 +228,7 @@
                 console.log("取得UID->",USER.id)
 
 
+                console.log("PlanID+",p)
                 const res = await fetch(`${API_BASE_URL}/switch-plan`, {
                 method: 'POST',
                 headers: {
@@ -242,6 +243,7 @@
 
                 });
                 const data = await res.json();
+                
                 if (data.status === 'ok') {
                 showToast(`已切換到方案 ${PlanType(p.plan_id)}`);
                 // 重新刷新列表

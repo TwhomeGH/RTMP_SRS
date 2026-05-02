@@ -26,56 +26,85 @@ import { pool } from './API/pool.js'
 
 
 
-// 切換方案
-// 切換或更新方案
-async function switchPlan(userId, newPlanId, planDay = 30, active = true, id = -1) {
+
+/**
+ * 
+ * @param {*} userId 識別是哪個用戶的方案
+ * @param {*} newPlanId 方案等級 Basic Pro Plus
+ * @param {*} active 啟用或關閉
+ * @param {*} id 要更新的指定Plan方案 識別ID
+ * @returns 
+ */
+
+async function switchPlan(userId, newPlanId, active = true, id = -1) {
   try {
-    // 先停用舊方案
-    await pool.query(
-      `UPDATE user_plans SET active = false WHERE user_id = $1 AND active = true`,
-      [userId]
-    );
+    const now = new Date();
+    const newPlanDay = getPlanById(newPlanId, 1);
 
-    // 查出舊方案的到期時間 (如果有的話)
-    const latest = await pool.query(
-      `SELECT MAX(expire_at) as latest_expire
+    const current = await pool.query(
+      `SELECT id, plan_id, start_at, expire_at
          FROM user_plans
-         WHERE user_id = $1`,
+         WHERE user_id = $1 AND active = true
+         ORDER BY expire_at DESC
+         LIMIT 1`,
       [userId]
     );
 
-    let baseExpire = new Date(); // 預設從現在開始算
-    if (latest.rows[0].latest_expire) {
-      baseExpire = new Date(latest.rows[0].latest_expire);
+    let totalDays = newPlanDay;
+
+    if (current.rows.length > 0) {
+      const startAt = new Date(current.rows[0].start_at);
+      const oldPlanId = current.rows[0].plan_id;
+      const oldPlanDay = getPlanById(oldPlanId, 1);
+
+      const usedDays = Math.floor((now - startAt) / (24 * 60 * 60 * 1000));
+      const remainingDays = Math.max(0, oldPlanDay - usedDays);
+
+      await pool.query(
+        `UPDATE user_plans SET active = false WHERE id = $1`,
+        [current.rows[0].id]
+      );
+
+      if (newPlanId === oldPlanId) {
+        // 同方案 → 保持剩餘天數
+        totalDays = remainingDays;
+      } else if (newPlanDay > oldPlanDay) {
+        // 升級 → 新方案天數 + 舊方案剩餘天數
+        totalDays = newPlanDay + remainingDays;
+      } else {
+        // 降級 → 只用新方案天數
+        totalDays = newPlanDay;
+      }
+
+      console.log(`舊方案天數: ${oldPlanDay}, 已使用: ${usedDays}, 剩餘: ${remainingDays}, 新方案天數: ${newPlanDay}, 最終計算: ${totalDays}`);
     }
 
-    // 新方案的到期時間
-    const newExpire = new Date(baseExpire.getTime() + (planDay * 24 * 60 * 60 * 1000));
+    const startAt = now;
+    const newExpire = new Date(startAt.getTime() + totalDays * 24 * 60 * 60 * 1000);
 
     let result;
     if (id >= 0) {
-      // 更新指定 id 的方案
       result = await pool.query(
         `UPDATE user_plans
          SET plan_id = $1,
              expire_at = $2,
-             active = $3
-         WHERE id = $4 AND user_id = $5
+             active = $3,
+             start_at = $4
+         WHERE id = $5 AND user_id = $6
          RETURNING *`,
-        [newPlanId, newExpire, active, id, userId]
+        [newPlanId, newExpire, active, startAt, id, userId]
       );
     } else {
-      // 插入新方案
       result = await pool.query(
-        `INSERT INTO user_plans (user_id, plan_id, expire_at, active)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO user_plans (user_id, plan_id, expire_at, active, start_at)
+         VALUES ($1, $2, $3, $4, $5)
          RETURNING *`,
-        [userId, newPlanId, newExpire, active]
+        [userId, newPlanId, newExpire, active, startAt]
       );
     }
 
     if (result.rows.length > 0) {
-      console.log('切換/更新方案成功:', result.rows[0]);
+      console.log('切換/新增方案成功:', result.rows[0]);
       return result.rows[0];
     } else {
       console.log('沒有更新或插入任何方案');
@@ -86,6 +115,7 @@ async function switchPlan(userId, newPlanId, planDay = 30, active = true, id = -
     throw err;
   }
 }
+
 
 
 
@@ -232,7 +262,14 @@ const planMap = {
   2: "plus"
 };
 
-// 用 planID 查方案
+
+/**
+ * @brief 用 planID 查方案
+ *
+ * @param {*} key 他方案識別名
+ * @param {number} [type=0] 0取顯示名字 1取天數 2取Plan等級ID
+ * @return {*} 
+ */
 function getPlanById(planID, type = 0) {
   const key = planMap[planID];
   if (!key) return "未知方案";
@@ -498,8 +535,14 @@ app.post('/switch-plan', express.json(), async (req, res) => {
 
   const { userId, updatePlanID ,planID } = req.body;
   try {
-    const result = await switchPlan(userId, planID, getPlanById(planID, 1),true,updatePlanID);
 
+    var result = {}
+
+    console.log("當前等級PlanID",planID,getPlanById(planID,1))
+    
+    result = await switchPlan(userId, planID,true,updatePlanID);
+
+    
     console.log("方案",getPlanById(planID,0),"天數",getPlanById(planID, 1),"Plan等級ID",getPlanById(planID, 2),"用戶",userId)
 
 
