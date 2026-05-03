@@ -424,11 +424,12 @@
         }
 
         /**
- * 判斷使用者購買新方案後要 UPDATE 或 INSERT
- * @param {Array} planlist - 已存在的方案清單
- * @param {number} planID - 新購買的方案 ID
- * @returns {Object} { action: "UPDATE" | "INSERT", target: {id, plan_id, expire_at} }
- */
+         * 此部分 應該由後端控制而不是 前端 應該棄用
+         * 判斷使用者購買新方案後要 UPDATE 或 INSERT
+         * @param {Array} planlist - 已存在的方案清單
+         * @param {number} planID - 新購買的方案 ID
+         * @returns {Object} { action: "UPDATE" | "INSERT", target: {id, plan_id, expire_at} }
+         */
         function decidePlanAction(planlist, planID) {
             if (!planlist || planlist.length === 0) {
                 return { action: "INSERT", target: null };
@@ -473,11 +474,13 @@
             let latestPlan;
             if (planlist.length > 0) {
                 console.log("Plist", planlist, planID)
+
+
                 let PlanAC = decidePlanAction(planlist, planID)
                 console.log("PlAN_AC", PlanAC)
                 if (PlanAC.action == "UPDATE") {
                     latestPlan = PlanAC.target
-                } else if (PlanAC.action == "INSERT") {
+                } else if (PlanAC.action == "INSERT") { //新增方案
                     latestPlan = { ...PlanAC.target, id: -1 }
 
                 }
@@ -485,6 +488,7 @@
 
             console.log('last', latestPlan)
             const paypalContainer = document.getElementById(elementID);
+            
             paypalContainer.innerHTML = ''
             paypal.Buttons({
                 createOrder: async function (data, actions) {
@@ -575,6 +579,8 @@
             renderPaypalButton("paypal-button-container-basic", userID, isRenew, key, "basic", 0, UserPlan);
             renderPaypalButton("paypal-button-container-pro", userID, isRenew, key, "pro", 1, UserPlan);
             renderPaypalButton("paypal-button-container-plus", userID, isRenew, key, "plus", 2, UserPlan);
+
+
         }
 
         // 初始化所有 PayPal 按鈕
